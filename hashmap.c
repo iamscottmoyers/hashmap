@@ -121,6 +121,8 @@ void hashmap_term( hashmap_t *hashmap )
 	{
 		bucket_term( &hashmap->buckets[i] );
 	}
+
+	free( hashmap->buckets );
 }
 
 hashmap_t *hashmap_create( void )
