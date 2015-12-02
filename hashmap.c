@@ -22,6 +22,11 @@ typedef struct bucket_t
 	bucket_stats_t stats;
 } bucket_t;
 
+static int hashmap_key_compare( const hashmap_key_t lhs, const hashmap_key_t rhs )
+{
+	return strcmp( lhs, rhs );
+}
+
 static entry_t *entry_create( hashmap_key_t key, hashmap_value_t value )
 {
 	entry_t *entry = malloc( sizeof(entry_t) );
@@ -69,25 +74,33 @@ static void bucket_term( bucket_t *bucket )
 	}
 }
 
-static entry_t *bucket_find_entry( bucket_t *bucket, hashmap_key_t key )
+static entry_t *bucket_find_entry( bucket_t *bucket, hashmap_key_t key, entry_t ** const prev_entry )
 {
+	entry_t *prev = NULL;
 	entry_t *iter;
 
 	for( iter = bucket->entries; NULL != iter; iter = iter->next )
 	{
-		if( 0 == strcmp( key, iter->key ) )
+		if( 0 == hashmap_key_compare( key, iter->key ) )
 		{
-			return iter;
+			break;
 		}
+
+		prev = iter;
 	}
 
-	return NULL;
+	if( NULL != prev_entry )
+	{
+		*prev_entry = prev;
+	}
+
+	return iter;
 }
 
 static unsigned int bucket_find( bucket_t *bucket, hashmap_key_t key, hashmap_value_t * const value )
 {
 	unsigned int found = 0;
-	entry_t *entry = bucket_find_entry( bucket, key );
+	entry_t *entry = bucket_find_entry( bucket, key, NULL );
 
 	if( NULL != entry )
 	{
@@ -110,7 +123,7 @@ static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_
 	assert( NULL != bucket );
 	assert( NULL != key );
 
-	entry = bucket_find_entry( bucket, key );
+	entry = bucket_find_entry( bucket, key, NULL );
 	if( NULL != entry )
 	{
 		/* Key exists in this bucket, update the value. */
@@ -135,6 +148,26 @@ static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_
 	}
 
 	return err;
+}
+
+static void bucket_remove( bucket_t *bucket, const hashmap_key_t key )
+{
+	entry_t *prev;
+	entry_t *iter = bucket_find_entry( bucket, key, &prev );
+
+	if( NULL != iter )
+	{
+		if( NULL == prev )
+		{
+			bucket->entries = iter->next;
+		}
+		else
+		{
+			prev->next = iter->next;
+		}
+
+		entry_destroy( iter );
+	}
 }
 
 int hashmap_init( hashmap_t *hashmap )
@@ -274,6 +307,12 @@ int hashmap_add( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_t value )
 {
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
 	return bucket_add( bucket, key, value );
+}
+
+void hashmap_remove( hashmap_t *hashmap, hashmap_key_t key )
+{
+	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
+	bucket_remove( bucket, key );
 }
 
 void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap )

@@ -33,6 +33,13 @@ int main( int argc, char *argv[] )
 	assert( 1 == res );
 	assert( 101 == val );
 
+	hashmap_remove( hashmap, "test" );
+	res = hashmap_find( hashmap, "test", NULL );
+	assert( 0 == res );
+	hashmap_remove( hashmap, "test" );
+	res = hashmap_find( hashmap, "test", NULL );
+	assert( 0 == res );
+
 /*	hashmap_stats_fprintf( stdout, hashmap );*/
 	hashmap_destroy( hashmap );
 

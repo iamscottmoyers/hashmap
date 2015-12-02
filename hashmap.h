@@ -23,6 +23,7 @@ hashmap_t *hashmap_create_with_buckets( size_t num_buckets );
 void hashmap_destroy( hashmap_t *hashmap );
 
 int hashmap_add( hashmap_t *hashmap, const hashmap_key_t key, const hashmap_value_t value );
+void hashmap_remove( hashmap_t *hashmap, const hashmap_key_t key );
 unsigned int hashmap_find( hashmap_t *hashmap, const hashmap_key_t key, hashmap_value_t * const value );
 void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap );
 
