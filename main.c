@@ -16,9 +16,22 @@ int main( int argc, char *argv[] )
 	res = hashmap_add( hashmap, "test", 100 );
 	assert( 0 == res );
 
+	res = hashmap_add( hashmap, "test", 101 );
+	assert( 0 == res );
+
+	res = hashmap_add( hashmap, "test2", 3 );
+	assert( 0 == res );
+
+	res = hashmap_find( hashmap, "test2", NULL );
+	assert( 1 == res );
+
+	res = hashmap_find( hashmap, "test2", &val );
+	assert( 1 == res );
+	assert( 3 == val );
+
 	res = hashmap_find( hashmap, "test", &val );
 	assert( 1 == res );
-	assert( 100 == val );
+	assert( 101 == val );
 
 /*	hashmap_stats_fprintf( stdout, hashmap );*/
 	hashmap_destroy( hashmap );

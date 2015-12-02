@@ -69,33 +69,56 @@ static void bucket_term( bucket_t *bucket )
 	}
 }
 
-static unsigned int bucket_find( bucket_t *bucket, hashmap_key_t key, hashmap_value_t * const value )
+static entry_t *bucket_find_entry( bucket_t *bucket, hashmap_key_t key )
 {
 	entry_t *iter;
+
 	for( iter = bucket->entries; NULL != iter; iter = iter->next )
 	{
 		if( 0 == strcmp( key, iter->key ) )
 		{
-			if( NULL != value )
-			{
-				*value = iter->value;
-			}
-
-			return 1;
+			return iter;
 		}
 	}
 
-	return 0;
+	return NULL;
+}
+
+static unsigned int bucket_find( bucket_t *bucket, hashmap_key_t key, hashmap_value_t * const value )
+{
+	unsigned int found = 0;
+	entry_t *entry = bucket_find_entry( bucket, key );
+
+	if( NULL != entry )
+	{
+		found = 1;
+
+		if( NULL != value )
+		{
+			*value = entry->value;
+		}
+	}
+
+	return found;
 }
 
 static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_value_t value )
 {
-	int err = -1;
+	entry_t *entry;
+	int err = 0;
 
 	assert( NULL != bucket );
+	assert( NULL != key );
 
-	if( 0 == bucket_find( bucket, key, NULL ) )
+	entry = bucket_find_entry( bucket, key );
+	if( NULL != entry )
 	{
+		/* Key exists in this bucket, update the value. */
+		entry->value = value;
+	}
+	else
+	{
+		/* Key doesn't exist in this bucket, add it. */
 		entry_t *new_entry = entry_create( key, value );
 
 		if( NULL != new_entry )
@@ -104,7 +127,10 @@ static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_
 			bucket->entries = new_entry;
 
 			++bucket->stats.num_entries;
-			err = 0;
+		}
+		else
+		{
+			err = -1;
 		}
 	}
 
