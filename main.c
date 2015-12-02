@@ -1,14 +1,12 @@
 #include <assert.h>
+#include <stdlib.h>
 
 #include "hashmap.h"
 
-int main( int argc, char *argv[] )
+static void arbitrary( void )
 {
 	int res, val;
 	hashmap_t *hashmap;
-
-	(void) argc;
-	(void) argv;
 
 	hashmap = hashmap_create();
 	assert( hashmap );
@@ -40,8 +38,55 @@ int main( int argc, char *argv[] )
 	res = hashmap_find( hashmap, "test", NULL );
 	assert( 0 == res );
 
-/*	hashmap_stats_fprintf( stdout, hashmap );*/
 	hashmap_destroy( hashmap );
+}
+
+static void random_string( char str[], size_t len )
+{
+	unsigned int i;
+	for( i = 0; i < len - 1; ++i )
+	{
+		str[i] = (rand() % ('~' - ' ')) - ' ';
+	}
+
+	str[len - 1] = '\0';
+}
+
+static void random_insertions( void )
+{
+	int res;
+	hashmap_t hashmap;
+	unsigned int i;
+
+	res = hashmap_init_with_buckets( &hashmap, 8192 /* pow 2 */ );
+	assert( 0 == res );
+
+	for( i = 0; i < 100000; ++i )
+	{
+		char str[10];
+		hashmap_value_t val = rand();
+		hashmap_value_t retrieved;
+
+		random_string( str, sizeof(str) );
+
+		res = hashmap_add( &hashmap, str, val );
+		assert( 0 == res );
+
+		res = hashmap_find( &hashmap, str, &retrieved );
+		assert( 1 == res );
+		assert( retrieved == val );
+	}
+
+	hashmap_term( &hashmap );
+}
+
+int main( int argc, char *argv[] )
+{
+	(void) argc;
+	(void) argv;
+
+	arbitrary();
+	random_insertions();
 
 	return 0;
 }
