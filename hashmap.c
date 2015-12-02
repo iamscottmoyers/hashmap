@@ -4,6 +4,95 @@
 
 #include "hashmap.h"
 
+static entry_t *entry_create( key_t key, value_t value )
+{
+	entry_t *entry = malloc( sizeof(entry_t) );
+
+	if( NULL != entry )
+	{
+		size_t key_len = strlen( key ) + 1;
+		key_t key_copy = malloc( key_len );
+
+		if( NULL != key_copy )
+		{
+			memcpy( key_copy, key, key_len );
+
+			entry->key = key_copy;
+			entry->value = value;
+			entry->next = NULL;
+		}
+		else
+		{
+			free( entry );
+			entry = NULL;
+		}
+	}
+
+	return entry;
+}
+
+static void entry_destroy( entry_t *entry )
+{
+	assert( NULL != entry );
+
+	free( entry->key );
+	free( entry );
+}
+
+static void bucket_term( bucket_t *bucket )
+{
+	entry_t *iter;
+	entry_t *next;
+
+	for( iter = bucket->entries; NULL != iter; iter = next )
+	{
+		next = iter->next;
+		entry_destroy( iter );
+	}
+}
+
+static unsigned int bucket_find( bucket_t *bucket, key_t key, value_t * const value )
+{
+	entry_t *iter;
+	for( iter = bucket->entries; NULL != iter; iter = iter->next )
+	{
+		if( 0 == strcmp( key, iter->key ) )
+		{
+			if( NULL != value )
+			{
+				*value = iter->value;
+			}
+
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int bucket_add( bucket_t *bucket, key_t key, value_t value )
+{
+	int err = -1;
+
+	assert( NULL != bucket );
+
+	if( 0 == bucket_find( bucket, key, NULL ) )
+	{
+		entry_t *new_entry = entry_create( key, value );
+
+		if( NULL != new_entry )
+		{
+			new_entry->next = bucket->entries;
+			bucket->entries = new_entry;
+
+			++bucket->stats.num_entries;
+			err = 0;
+		}
+	}
+
+	return err;
+}
+
 #define HASHMAP_BUCKETS (2048)
 
 int hashmap_init( hashmap_t *hashmap )
@@ -20,17 +109,6 @@ int hashmap_init( hashmap_t *hashmap )
 	}
 
 	return err;
-}
-
-static void bucket_term( bucket_t *bucket )
-{
-	entry_t *iter;
-	entry_t *next;
-	for( iter = bucket->entries; NULL != iter; iter = next )
-	{
-		next = iter->next;
-		free( iter );
-	}
 }
 
 void hashmap_term( hashmap_t *hashmap )
@@ -86,90 +164,26 @@ static unsigned long string_hash( const char *string )
 	return hash;
 }
 
-static size_t bucket_index( key_t key )
+static size_t hashmap_bucket_index( key_t key )
 {
 	return string_hash( key ) % HASHMAP_BUCKETS;
 }
 
-static int bucket_add( bucket_t *bucket, key_t key, value_t value )
-{
-	int err = -1;
-	entry_t *iter;
-	entry_t *new_entry;
-
-	assert( NULL != bucket );
-
-	/* See if the key already exists in this bucket. */
-	for( iter = bucket->entries; NULL != iter; iter = iter->next )
-	{
-		if( 0 == strcmp( iter->key, key ) )
-		{
-			/* The key exists, replace the value and return. */
-			iter->value = value;
-			return 0;
-		}
-	}
-
-	/* The key doesn't exist, allocate a new entry and prepend it to the entry list. */
-	new_entry = malloc( sizeof(entry_t) );
-	if( NULL != new_entry )
-	{
-		size_t key_len = strlen( key ) + 1;
-		key_t key_copy = malloc( key_len );
-
-		if( NULL != key_copy )
-		{
-			memcpy( key_copy, key, key_len );
-
-			new_entry->key = key_copy;
-			new_entry->value = value;
-
-			new_entry->next = bucket->entries;
-			bucket->entries = new_entry;
-
-			++bucket->stats.num_entries;
-			err = 0;
-		}
-		else
-		{
-			free( new_entry );
-		}
-	}
-
-	return err;
-}
-
 static bucket_t *hashmap_bucket_get( hashmap_t *hashmap, key_t key )
 {
+	size_t index;
+
 	assert( NULL != hashmap );
 	assert( NULL != key );
 
-	return &hashmap->buckets[bucket_index( key )];
+	index = hashmap_bucket_index( key );
+	return &hashmap->buckets[index];
 }
 
 int hashmap_add( hashmap_t *hashmap, key_t key, value_t value )
 {
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
 	return bucket_add( bucket, key, value );
-}
-
-static unsigned int bucket_find( bucket_t *bucket, key_t key, value_t * const value )
-{
-	entry_t *iter;
-	for( iter = bucket->entries; NULL != iter; iter = iter->next )
-	{
-		if( 0 == strcmp( key, iter->key ) )
-		{
-			if( NULL != value )
-			{
-				*value = iter->value;
-			}
-
-			return 1;
-		}
-	}
-
-	return 0;
 }
 
 void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap )
