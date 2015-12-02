@@ -153,7 +153,12 @@ static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_
 static void bucket_remove( bucket_t *bucket, const hashmap_key_t key )
 {
 	entry_t *prev;
-	entry_t *iter = bucket_find_entry( bucket, key, &prev );
+	entry_t *iter;
+
+	assert( NULL != bucket );
+	assert( NULL != key );
+
+	iter = bucket_find_entry( bucket, key, &prev );
 
 	if( NULL != iter )
 	{
