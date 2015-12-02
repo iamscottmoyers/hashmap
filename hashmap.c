@@ -4,14 +4,14 @@
 
 #include "hashmap.h"
 
-static entry_t *entry_create( key_t key, value_t value )
+static entry_t *entry_create( hashmap_key_t key, hashmap_value_t value )
 {
 	entry_t *entry = malloc( sizeof(entry_t) );
 
 	if( NULL != entry )
 	{
 		size_t key_len = strlen( key ) + 1;
-		key_t key_copy = malloc( key_len );
+		hashmap_key_t key_copy = malloc( key_len );
 
 		if( NULL != key_copy )
 		{
@@ -51,7 +51,7 @@ static void bucket_term( bucket_t *bucket )
 	}
 }
 
-static unsigned int bucket_find( bucket_t *bucket, key_t key, value_t * const value )
+static unsigned int bucket_find( bucket_t *bucket, hashmap_key_t key, hashmap_value_t * const value )
 {
 	entry_t *iter;
 	for( iter = bucket->entries; NULL != iter; iter = iter->next )
@@ -70,7 +70,7 @@ static unsigned int bucket_find( bucket_t *bucket, key_t key, value_t * const va
 	return 0;
 }
 
-static int bucket_add( bucket_t *bucket, key_t key, value_t value )
+static int bucket_add( bucket_t *bucket, hashmap_key_t key, hashmap_value_t value )
 {
 	int err = -1;
 
@@ -164,12 +164,12 @@ static unsigned long string_hash( const char *string )
 	return hash;
 }
 
-static size_t hashmap_bucket_index( key_t key )
+static size_t hashmap_bucket_index( hashmap_key_t key )
 {
 	return string_hash( key ) % HASHMAP_BUCKETS;
 }
 
-static bucket_t *hashmap_bucket_get( hashmap_t *hashmap, key_t key )
+static bucket_t *hashmap_bucket_get( hashmap_t *hashmap, hashmap_key_t key )
 {
 	size_t index;
 
@@ -180,7 +180,7 @@ static bucket_t *hashmap_bucket_get( hashmap_t *hashmap, key_t key )
 	return &hashmap->buckets[index];
 }
 
-int hashmap_add( hashmap_t *hashmap, key_t key, value_t value )
+int hashmap_add( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_t value )
 {
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
 	return bucket_add( bucket, key, value );
@@ -199,7 +199,7 @@ void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap )
 	}
 }
 
-unsigned int hashmap_find( hashmap_t *hashmap, key_t key, value_t * const value )
+unsigned int hashmap_find( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_t * const value )
 {
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
 	return bucket_find( bucket, key, value );
