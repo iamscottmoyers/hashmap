@@ -172,6 +172,8 @@ static void bucket_remove( bucket_t *bucket, const hashmap_key_t key )
 		}
 
 		entry_destroy( iter );
+
+		--bucket->stats.num_entries;
 	}
 }
 
