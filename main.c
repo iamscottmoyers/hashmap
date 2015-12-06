@@ -11,13 +11,13 @@ static void arbitrary( void )
 	hashmap = hashmap_create();
 	assert( hashmap );
 
-	res = hashmap_add( hashmap, "test", 100 );
+	res = hashmap_insert( hashmap, "test", 100 );
 	assert( 0 == res );
 
-	res = hashmap_add( hashmap, "test", 101 );
+	res = hashmap_insert( hashmap, "test", 101 );
 	assert( 0 == res );
 
-	res = hashmap_add( hashmap, "test2", 3 );
+	res = hashmap_insert( hashmap, "test2", 3 );
 	assert( 0 == res );
 
 	res = hashmap_find( hashmap, "test2", NULL );
@@ -69,13 +69,74 @@ static void random_insertions( void )
 
 		random_string( str, sizeof(str) );
 
-		res = hashmap_add( &hashmap, str, val );
+		res = hashmap_insert( &hashmap, str, val );
 		assert( 0 == res );
 
 		res = hashmap_find( &hashmap, str, &retrieved );
 		assert( 1 == res );
 		assert( retrieved == val );
 	}
+
+	hashmap_term( &hashmap );
+}
+
+static void test_size( void )
+{
+	int res;
+	hashmap_t hashmap;
+	size_t size;
+
+	res = hashmap_init( &hashmap );
+	assert( 0 == res );
+
+	/* Confirm initial size is 0. */
+	size = hashmap_size( &hashmap );
+	assert( 0 == size );
+
+	/* Confirm insertion increases by 1. */
+	res = hashmap_insert( &hashmap, "test", 1 );
+	assert( 0 == res );
+
+	size = hashmap_size( &hashmap );
+	assert( 1 == size );
+
+	/* Confirm duplicate insert doesn't change size. */
+	res = hashmap_insert( &hashmap, "test", 100 );
+	assert( 0 == res );
+
+	size = hashmap_size( &hashmap );
+	assert( 1 == size );
+
+	/* Confirm insertion increases by 1. */
+	res = hashmap_insert( &hashmap, "test2", 4 );
+	assert( 0 == res );
+
+	size = hashmap_size( &hashmap );
+	assert( 2 == size );
+
+	/* Confirm removal decreases by 1. */
+	hashmap_remove( &hashmap, "test" );
+
+	size = hashmap_size( &hashmap );
+	assert( 1 == size );
+
+	/* Confirm removal of key that doesn't exist doesn't change the size. */
+	hashmap_remove( &hashmap, "doesn't exist" );
+
+	size = hashmap_size( &hashmap );
+	assert( 1 == size );
+
+	/* Confirm removal of key that once existed but doesn't now doesn't change the size. */
+	hashmap_remove( &hashmap, "test" );
+
+	size = hashmap_size( &hashmap );
+	assert( 1 == size );
+
+	/* Confirm removal decreases by 1. */
+	hashmap_remove( &hashmap, "test2" );
+
+	size = hashmap_size( &hashmap );
+	assert( 0 == size );
 
 	hashmap_term( &hashmap );
 }
@@ -87,6 +148,7 @@ int main( int argc, char *argv[] )
 
 	arbitrary();
 	random_insertions();
+	test_size();
 
 	return 0;
 }

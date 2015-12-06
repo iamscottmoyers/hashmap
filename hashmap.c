@@ -115,19 +115,21 @@ static unsigned int bucket_find( bucket_t *bucket, hashmap_key_t key, hashmap_va
 	return found;
 }
 
-static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_value_t value )
+static int bucket_insert_existed( bucket_t *bucket, const hashmap_key_t key, const hashmap_value_t value, unsigned int * const existed )
 {
 	entry_t *entry;
 	int err = 0;
 
 	assert( NULL != bucket );
 	assert( NULL != key );
+	assert( NULL != existed );
 
 	entry = bucket_find_entry( bucket, key, NULL );
 	if( NULL != entry )
 	{
 		/* Key exists in this bucket, update the value. */
 		entry->value = value;
+		*existed = 0;
 	}
 	else
 	{
@@ -140,6 +142,7 @@ static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_
 			bucket->entries = new_entry;
 
 			++bucket->stats.num_entries;
+			*existed = 1;
 		}
 		else
 		{
@@ -150,13 +153,14 @@ static int bucket_add( bucket_t *bucket, const hashmap_key_t key, const hashmap_
 	return err;
 }
 
-static void bucket_remove( bucket_t *bucket, const hashmap_key_t key )
+static void bucket_remove_existed( bucket_t *bucket, const hashmap_key_t key, unsigned int * const existed )
 {
 	entry_t *prev;
 	entry_t *iter;
 
 	assert( NULL != bucket );
 	assert( NULL != key );
+	assert( NULL != existed );
 
 	iter = bucket_find_entry( bucket, key, &prev );
 
@@ -174,6 +178,11 @@ static void bucket_remove( bucket_t *bucket, const hashmap_key_t key )
 		entry_destroy( iter );
 
 		--bucket->stats.num_entries;
+		*existed = 1;
+	}
+	else
+	{
+		*existed = 0;
 	}
 }
 
@@ -191,6 +200,7 @@ int hashmap_init_with_buckets( hashmap_t *hashmap, size_t num_buckets )
 	assert( NULL != hashmap );
 	assert( num_buckets > 0 );
 
+	hashmap->size = 0;
 	hashmap->num_buckets = num_buckets;
 	hashmap->buckets = calloc( hashmap->num_buckets, sizeof(bucket_t) );
 
@@ -310,16 +320,51 @@ static bucket_t *hashmap_bucket_get( hashmap_t *hashmap, hashmap_key_t key )
 	return &hashmap->buckets[index];
 }
 
-int hashmap_add( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_t value )
+int hashmap_insert( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_t value )
 {
+	return hashmap_insert_existed( hashmap, key, value, NULL );
+}
+
+int hashmap_insert_existed( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_t value, unsigned int * const existed )
+{
+	unsigned int local_existed;
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
-	return bucket_add( bucket, key, value );
+	int err = bucket_insert_existed( bucket, key, value, &local_existed );
+	if( 0 == err )
+	{
+		if( 0 != local_existed )
+		{
+			++hashmap->size;
+		}
+
+		if( NULL != existed )
+		{
+			*existed = local_existed;
+		}
+	}
+
+	return err;
 }
 
 void hashmap_remove( hashmap_t *hashmap, hashmap_key_t key )
 {
+	hashmap_remove_existed( hashmap, key, NULL );
+}
+
+void hashmap_remove_existed( hashmap_t *hashmap, hashmap_key_t key, unsigned int * const existed )
+{
+	unsigned int local_existed;
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
-	bucket_remove( bucket, key );
+	bucket_remove_existed( bucket, key, &local_existed );
+	if( 0 != local_existed )
+	{
+		--hashmap->size;
+	}
+
+	if( NULL != existed )
+	{
+		*existed = local_existed;
+	}
 }
 
 void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap )
@@ -339,4 +384,10 @@ unsigned int hashmap_find( hashmap_t *hashmap, hashmap_key_t key, hashmap_value_
 {
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
 	return bucket_find( bucket, key, value );
+}
+
+size_t hashmap_size( const hashmap_t *hashmap )
+{
+	assert( NULL != hashmap );
+	return hashmap->size;
 }
