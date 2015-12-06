@@ -31,10 +31,10 @@ static void arbitrary( void )
 	assert( 1 == res );
 	assert( 101 == val );
 
-	hashmap_remove( hashmap, "test" );
+	hashmap_erase( hashmap, "test" );
 	res = hashmap_find( hashmap, "test", NULL );
 	assert( 0 == res );
-	hashmap_remove( hashmap, "test" );
+	hashmap_erase( hashmap, "test" );
 	res = hashmap_find( hashmap, "test", NULL );
 	assert( 0 == res );
 
@@ -85,6 +85,7 @@ static void test_size( void )
 	int res;
 	hashmap_t hashmap;
 	size_t size;
+	unsigned int empty;
 
 	res = hashmap_init( &hashmap );
 	assert( 0 == res );
@@ -92,6 +93,8 @@ static void test_size( void )
 	/* Confirm initial size is 0. */
 	size = hashmap_size( &hashmap );
 	assert( 0 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 != empty );
 
 	/* Confirm insertion increases by 1. */
 	res = hashmap_insert( &hashmap, "test", 1 );
@@ -99,6 +102,8 @@ static void test_size( void )
 
 	size = hashmap_size( &hashmap );
 	assert( 1 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 == empty );
 
 	/* Confirm duplicate insert doesn't change size. */
 	res = hashmap_insert( &hashmap, "test", 100 );
@@ -106,6 +111,8 @@ static void test_size( void )
 
 	size = hashmap_size( &hashmap );
 	assert( 1 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 == empty );
 
 	/* Confirm insertion increases by 1. */
 	res = hashmap_insert( &hashmap, "test2", 4 );
@@ -113,30 +120,40 @@ static void test_size( void )
 
 	size = hashmap_size( &hashmap );
 	assert( 2 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 == empty );
 
 	/* Confirm removal decreases by 1. */
-	hashmap_remove( &hashmap, "test" );
+	hashmap_erase( &hashmap, "test" );
 
 	size = hashmap_size( &hashmap );
 	assert( 1 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 == empty );
 
 	/* Confirm removal of key that doesn't exist doesn't change the size. */
-	hashmap_remove( &hashmap, "doesn't exist" );
+	hashmap_erase( &hashmap, "doesn't exist" );
 
 	size = hashmap_size( &hashmap );
 	assert( 1 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 == empty );
 
 	/* Confirm removal of key that once existed but doesn't now doesn't change the size. */
-	hashmap_remove( &hashmap, "test" );
+	hashmap_erase( &hashmap, "test" );
 
 	size = hashmap_size( &hashmap );
 	assert( 1 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 == empty );
 
 	/* Confirm removal decreases by 1. */
-	hashmap_remove( &hashmap, "test2" );
+	hashmap_erase( &hashmap, "test2" );
 
 	size = hashmap_size( &hashmap );
 	assert( 0 == size );
+	empty = hashmap_empty( &hashmap );
+	assert( 0 != empty );
 
 	hashmap_term( &hashmap );
 }

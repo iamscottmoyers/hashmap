@@ -153,7 +153,7 @@ static int bucket_insert_existed( bucket_t *bucket, const hashmap_key_t key, con
 	return err;
 }
 
-static void bucket_remove_existed( bucket_t *bucket, const hashmap_key_t key, unsigned int * const existed )
+static void bucket_erase_existed( bucket_t *bucket, const hashmap_key_t key, unsigned int * const existed )
 {
 	entry_t *prev;
 	entry_t *iter;
@@ -346,16 +346,16 @@ int hashmap_insert_existed( hashmap_t *hashmap, hashmap_key_t key, hashmap_value
 	return err;
 }
 
-void hashmap_remove( hashmap_t *hashmap, hashmap_key_t key )
+void hashmap_erase( hashmap_t *hashmap, hashmap_key_t key )
 {
-	hashmap_remove_existed( hashmap, key, NULL );
+	hashmap_erase_existed( hashmap, key, NULL );
 }
 
-void hashmap_remove_existed( hashmap_t *hashmap, hashmap_key_t key, unsigned int * const existed )
+void hashmap_erase_existed( hashmap_t *hashmap, hashmap_key_t key, unsigned int * const existed )
 {
 	unsigned int local_existed;
 	bucket_t *bucket = hashmap_bucket_get( hashmap, key );
-	bucket_remove_existed( bucket, key, &local_existed );
+	bucket_erase_existed( bucket, key, &local_existed );
 	if( 0 != local_existed )
 	{
 		--hashmap->size;
@@ -390,4 +390,10 @@ size_t hashmap_size( const hashmap_t *hashmap )
 {
 	assert( NULL != hashmap );
 	return hashmap->size;
+}
+
+unsigned int hashmap_empty( const hashmap_t *hashmap )
+{
+	assert( NULL != hashmap );
+	return (0 == hashmap->size) ? 1 : 0;
 }
