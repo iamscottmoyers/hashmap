@@ -32,4 +32,16 @@ unsigned int hashmap_empty( const hashmap_t *hashmap );
 unsigned int hashmap_find( hashmap_t *hashmap, const hashmap_key_t key, hashmap_value_t * const value );
 void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap );
 
+typedef struct hashmap_iter_t
+{
+	size_t bucket;
+	struct entry_t *entry;
+} hashmap_iter_t;
+
+void hashmap_iter_begin( const hashmap_t *hashmap, hashmap_iter_t *iter );
+void hashmap_iter_next( const hashmap_t *hashmap, hashmap_iter_t *iter );
+unsigned int hashmap_iter_end( const hashmap_t *hashmap, const hashmap_iter_t *iter );
+hashmap_key_t hashmap_iter_key( const hashmap_iter_t *iter );
+hashmap_value_t hashmap_iter_value( const hashmap_iter_t *iter );
+
 #endif

@@ -397,3 +397,72 @@ unsigned int hashmap_empty( const hashmap_t *hashmap )
 	assert( NULL != hashmap );
 	return (0 == hashmap->size) ? 1 : 0;
 }
+
+static void hashmap_iter_next_bucket( const hashmap_t *hashmap, hashmap_iter_t *iter )
+{
+	assert( NULL != iter );
+
+	/* Search for the next populated bucket in the hashmap. */
+	for( ; iter->bucket < hashmap->num_buckets; ++iter->bucket )
+	{
+		bucket_t *bucket = &hashmap->buckets[iter->bucket];
+		if( NULL != bucket->entries )
+		{
+			iter->entry = bucket->entries;
+			break;
+		}
+	}
+}
+
+void hashmap_iter_begin( const hashmap_t *hashmap, hashmap_iter_t *iter )
+{
+	assert( NULL != hashmap );
+	assert( NULL != iter );
+
+	iter->bucket = 0;
+	hashmap_iter_next_bucket( hashmap, iter );
+}
+
+void hashmap_iter_next( const hashmap_t *hashmap, hashmap_iter_t *iter )
+{
+	entry_t *entry;
+
+	assert( NULL != hashmap );
+	assert( NULL != iter );
+	assert( NULL != iter->entry );
+
+	entry = iter->entry;
+	if( NULL != entry->next )
+	{
+		iter->entry = entry->next;
+	}
+	else
+	{
+		++iter->bucket;
+		hashmap_iter_next_bucket( hashmap, iter );
+	}
+}
+
+unsigned int hashmap_iter_end( const hashmap_t *hashmap, const hashmap_iter_t *iter )
+{
+	assert( NULL != hashmap );
+	assert( NULL != iter );
+
+	return (hashmap->num_buckets == iter->bucket) ? 1 : 0;
+}
+
+hashmap_key_t hashmap_iter_key( const hashmap_iter_t *iter )
+{
+	assert( NULL != iter );
+	assert( NULL != iter->entry );
+
+	return iter->entry->key;
+}
+
+hashmap_value_t hashmap_iter_value( const hashmap_iter_t *iter )
+{
+	assert( NULL != iter );
+	assert( NULL != iter->entry );
+
+	return iter->entry->value;
+}

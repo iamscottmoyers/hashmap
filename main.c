@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "hashmap.h"
 
@@ -158,6 +159,78 @@ static void test_size( void )
 	hashmap_term( &hashmap );
 }
 
+static void iter_test( void )
+{
+	int res;
+	hashmap_t *hashmap;
+	hashmap_iter_t iter;
+	unsigned int count = 0;
+
+	hashmap = hashmap_create();
+	assert( hashmap );
+
+	for( hashmap_iter_begin( hashmap, &iter );
+	     !hashmap_iter_end( hashmap, &iter );
+	     hashmap_iter_next( hashmap, &iter ) )
+	{
+		assert( 0 );
+	}
+	assert( 0 == count );
+
+	res = hashmap_insert( hashmap, "test", 100 );
+	assert( 0 == res );
+
+	count = 0;
+	for( hashmap_iter_begin( hashmap, &iter );
+	     !hashmap_iter_end( hashmap, &iter );
+	     hashmap_iter_next( hashmap, &iter ) )
+	{
+		hashmap_key_t key = hashmap_iter_key( &iter );
+		hashmap_value_t value = hashmap_iter_value( &iter );
+
+		assert( 0 == strcmp( key, "test" ) );
+		assert( value == 100 );
+		++count;
+	}
+
+	assert( 1 == count );
+
+	res = hashmap_insert( hashmap, "next", 2 );
+	assert( 0 == res );
+	res = hashmap_insert( hashmap, "another", 3 );
+	assert( 0 == res );
+	res = hashmap_insert( hashmap, "yet another", 4 );
+	assert( 0 == res );
+	res = hashmap_insert( hashmap, "penultimate", 5 );
+	assert( 0 == res );
+	res = hashmap_insert( hashmap, "final", 5 );
+	assert( 0 == res );
+
+	count = 0;
+	for( hashmap_iter_begin( hashmap, &iter );
+	     !hashmap_iter_end( hashmap, &iter );
+	     hashmap_iter_next( hashmap, &iter ) )
+	{
+		++count;
+	}
+
+	assert( 6 == count );
+
+
+	hashmap_erase( hashmap, "penultimate" );
+	count = 0;
+	for( hashmap_iter_begin( hashmap, &iter );
+	     !hashmap_iter_end( hashmap, &iter );
+	     hashmap_iter_next( hashmap, &iter ) )
+	{
+		++count;
+	}
+
+	assert( 5 == count );
+
+	hashmap_destroy( hashmap );
+}
+
 int main( int argc, char *argv[] )
 {
 	(void) argc;
@@ -166,6 +239,7 @@ int main( int argc, char *argv[] )
 	arbitrary();
 	random_insertions();
 	test_size();
+	iter_test();
 
 	return 0;
 }
