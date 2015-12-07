@@ -62,16 +62,21 @@ static void entry_destroy( entry_t *entry )
 	free( entry );
 }
 
-static void bucket_term( bucket_t *bucket )
+static void bucket_clear( bucket_t *bucket )
 {
 	entry_t *iter;
 	entry_t *next;
+
+	assert( NULL != bucket );
 
 	for( iter = bucket->entries; NULL != iter; iter = next )
 	{
 		next = iter->next;
 		entry_destroy( iter );
 	}
+
+	bucket->entries = NULL;
+	bucket->stats.num_entries = 0;
 }
 
 static entry_t *bucket_find_entry( bucket_t *bucket, hashmap_key_t key, entry_t ** const prev_entry )
@@ -129,7 +134,7 @@ static int bucket_insert_existed( bucket_t *bucket, const hashmap_key_t key, con
 	{
 		/* Key exists in this bucket, update the value. */
 		entry->value = value;
-		*existed = 0;
+		*existed = 1;
 	}
 	else
 	{
@@ -142,7 +147,7 @@ static int bucket_insert_existed( bucket_t *bucket, const hashmap_key_t key, con
 			bucket->entries = new_entry;
 
 			++bucket->stats.num_entries;
-			*existed = 1;
+			*existed = 0;
 		}
 		else
 		{
@@ -214,15 +219,8 @@ int hashmap_init_with_buckets( hashmap_t *hashmap, size_t num_buckets )
 
 void hashmap_term( hashmap_t *hashmap )
 {
-	unsigned int i;
-
 	assert( NULL != hashmap );
-
-	for( i = 0; i < hashmap->num_buckets; ++i )
-	{
-		bucket_term( &hashmap->buckets[i] );
-	}
-
+	hashmap_clear( hashmap );
 	free( hashmap->buckets );
 }
 
@@ -332,7 +330,7 @@ int hashmap_insert_existed( hashmap_t *hashmap, hashmap_key_t key, hashmap_value
 	int err = bucket_insert_existed( bucket, key, value, &local_existed );
 	if( 0 == err )
 	{
-		if( 0 != local_existed )
+		if( 0 == local_existed )
 		{
 			++hashmap->size;
 		}
@@ -365,6 +363,20 @@ void hashmap_erase_existed( hashmap_t *hashmap, hashmap_key_t key, unsigned int 
 	{
 		*existed = local_existed;
 	}
+}
+
+void hashmap_clear( hashmap_t *hashmap )
+{
+	size_t i;
+
+	assert( NULL != hashmap );
+
+	for( i = 0; i < hashmap->num_buckets; ++i )
+	{
+		bucket_clear( &hashmap->buckets[i] );
+	}
+
+	hashmap->size = 0;
 }
 
 void hashmap_stats_fprintf( FILE *fp, const hashmap_t *hashmap )

@@ -27,6 +27,7 @@ int hashmap_insert( hashmap_t *hashmap, const hashmap_key_t key, const hashmap_v
 int hashmap_insert_existed( hashmap_t *hashmap, const hashmap_key_t key, const hashmap_value_t value, unsigned int * const existed );
 void hashmap_erase( hashmap_t *hashmap, const hashmap_key_t key );
 void hashmap_erase_existed( hashmap_t *hashmap, const hashmap_key_t key, unsigned int * const existed );
+void hashmap_clear( hashmap_t *hashmap );
 size_t hashmap_size( const hashmap_t *hashmap );
 unsigned int hashmap_empty( const hashmap_t *hashmap );
 unsigned int hashmap_find( hashmap_t *hashmap, const hashmap_key_t key, hashmap_value_t * const value );

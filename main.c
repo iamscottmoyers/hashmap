@@ -81,7 +81,7 @@ static void random_insertions( void )
 	hashmap_term( &hashmap );
 }
 
-static void test_size( void )
+static void size_test( void )
 {
 	int res;
 	hashmap_t hashmap;
@@ -231,6 +231,30 @@ static void iter_test( void )
 	hashmap_destroy( hashmap );
 }
 
+static void clear_test( void )
+{
+	int res;
+	hashmap_t hashmap;
+	size_t size;
+	unsigned int existed;
+
+	res = hashmap_init( &hashmap );
+	assert( 0 == res );
+
+	res = hashmap_insert( &hashmap, "test", 1 );
+	assert( 0 == res );
+
+	hashmap_clear( &hashmap );
+
+	size = hashmap_size( &hashmap );
+	assert( 0 == size );
+	res = hashmap_insert_existed( &hashmap, "test", 1, &existed );
+	assert( 0 == res );
+	assert( 0 == existed );
+
+	hashmap_term( &hashmap );
+}
+
 int main( int argc, char *argv[] )
 {
 	(void) argc;
@@ -238,8 +262,9 @@ int main( int argc, char *argv[] )
 
 	arbitrary();
 	random_insertions();
-	test_size();
+	size_test();
 	iter_test();
+	clear_test();
 
 	return 0;
 }
